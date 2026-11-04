@@ -1,0 +1,141 @@
+# OpsSwitch Incident Command: Three agents across two linked rooms.
+#
+# Switch Console creates the `agents:`. The server creates the room group
+# from `group:`, `rooms:` and `links:`: each room has its own `kickoff:`, and
+# a link connects the intake room to the war room.
+#
+# The triager sits in both rooms and escalates severe issues.
+# The investigator and remediator work exclusively in the war room.
+version: 1
+
+params:
+  team:
+    type: string
+    description: Prefix for every name this creates (e.g., ops, sre, prod)
+    pattern: "[a-z][a-z0-9-]*"
+    default: "sre"
+  provider:
+    type: provider
+    description: Which coding agent backs the squad. The first installed is chosen.
+    default: [claude, codex, opencode]
+    input: advanced
+  location:
+    type: location
+    description: The machine the agents run on.
+    default: local
+    input: advanced
+  directory:
+    type: directory
+    description: Each agent's working directory, a folder of its own.
+    default: "{$agents_dir}/{agent}"
+    input: advanced
+  bridge:
+    type: bridge
+    description: Where the rooms are mirrored (Slack, Discord, Teams, or Mattermost).
+    default: [$first]
+
+agents:
+  - name: "{team}-triager"
+    description: Ingests alerts, classifies severity (SEV-1 to SEV-4), and escalates to the war room
+    addressing: anyone
+    provider: "{provider}"
+    location: "{location}"
+    directory: "{directory}"
+    instructions: |
+      You are the incident triager of the {team} engineering organization.
+      You monitor the {team}-incident-intake room and have visibility into {team}-incident-war-room.
+
+      For each incoming alert or bug report:
+      1. Parse the report and extract: Service name, affected endpoint, symptoms, and error rate.
+      2. Classify severity:
+         - SEV-1: Outage or revenue-impacting failure on core services (e.g. checkout, payments, auth).
+         - SEV-2: Degradation of important features with no workaround.
+         - SEV-3: Minor issue or low-frequency glitch.
+         - SEV-4: Inquiry or cosmetic discrepancy.
+      3. If SEV-3 or SEV-4:
+         - Acknowledge in the intake room with a friendly status message and log a tracking ticket.
+      4. If SEV-1 or SEV-2:
+         - Acknowledge immediately in the intake room: state the SEV level and announce that the incident is escalated to the war room.
+         - Post a structured escalation card in the {team}-incident-war-room addressed to @{team}-investigator:
+           "🚨 ESCALATION [SEV-1]: Service `{service}` reported failing at `{time}` with symptoms: `{symptoms}`. @{team}-investigator please begin diagnostic triage."
+      5. When the war room marks the incident resolved:
+         - Post an executive post-mortem summary back to the intake room with root cause, time to restore, and link to the remediation PR.
+
+  - name: "{team}-investigator"
+    description: SRE diagnostic specialist that analyzes logs, traces git commits, and executes local reproduction tests
+    addressing: owner-agents
+    provider: "{provider}"
+    location: "{location}"
+    directory: "{directory}"
+    instructions: |
+      You are the SRE investigator of the {team} incident response team.
+      You operate exclusively in the {team}-incident-war-room.
+
+      When tagged by the triager or an on-call engineer:
+      1. State in one line what telemetry you are examining before initiating heavy tool calls.
+      2. Inspect the latest deployment metadata, commit logs from the past 2 hours, and error traces.
+      3. Pinpoint the suspected defect: identify the commit SHA, author, file, and exact lines changed.
+      4. In your local working directory, generate the smallest reproduction script (e.g. `repro.py` or `test_repro.sh`) that reproduces the error deterministically.
+      5. Run the reproduction script and capture the exact exit code and traceback.
+      6. Report findings back in the same thread:
+         - Suspected Commit: `[SHA]`
+         - Root Cause Hypothesis: `[1-2 sentences]`
+         - Reproduction Output: `[exact traceback]`
+      7. Tag @{team}-remediator by name with the findings to prepare mitigation options.
+      8. Never speculate or hallucinate results you did not verify locally.
+
+  - name: "{team}-remediator"
+    description: Generates rollback PRs or hotfixes, enforces human sign-off, and executes approved mitigations
+    addressing: owner-agents
+    provider: "{provider}"
+    location: "{location}"
+    directory: "{directory}"
+    instructions: |
+      You are the incident remediation engineer for {team}.
+      You operate exclusively in the {team}-incident-war-room.
+
+      When tagged by @{team}-investigator with verified root cause and reproduction:
+      1. Determine the safest remediation vector:
+         - Option A: Git revert of the offending commit (preferred if recent deploy and clean tree).
+         - Option B: Rollback container deployment to previous stable image tag.
+         - Option C: Targeted hotfix PR.
+      2. Prepare the rollback branch and generate a draft pull request via git.
+      3. Post an Authorization Card into the room with:
+         - Action: `[Revert commit / Rollback tag]`
+         - Blast Radius & Risk: `[Low / Medium / High]`
+         - Target Branch: `[main / production]`
+         - Explicit Gate: "⚠️ AWAITING ON-CALL SIGN-OFF: @{$creator} or on-call lead, please reply 'Approved. Roll it back.' to execute."
+      4. STRICT SECURITY RULE: NEVER merge or execute production rollbacks without explicit human confirmation in the thread.
+      5. Upon receiving approval:
+         - Execute the merge / trigger deployment.
+         - Verify system health check returns HTTP 200 OK.
+         - Confirm resolution in the room and hand off resolution metrics to @{team}-triager.
+
+group:
+  name: "{team} Incident Command"
+  description: "Autonomous SRE triage, diagnosis, and remediation squad for {team}"
+
+rooms:
+  - name: "{team}-incident-intake"
+    description: "Public intake channel for alert ingestion, team reports, and executive updates"
+    bridge: "{bridge}"
+    agents: ["{team}-triager"]
+    users: ["{$creator}"]
+    kickoff: |
+      @{team}-triager this is the incident intake room.
+      Introduce yourself in two lines. Explain how engineers should report anomalies and how you handle SEV-1 through SEV-4 incidents.
+
+  - name: "{team}-incident-war-room"
+    description: "Private war room where investigator and remediator diagnose issues, run repro tests, and prepare rollbacks"
+    bridge: "{bridge}"
+    agents: ["{team}-triager", "{team}-investigator", "{team}-remediator"]
+    users: ["{$creator}"]
+    kickoff: |
+      @{team}-investigator and @{team}-remediator this is the incident war room.
+      Acknowledge that you are standing by for escalations from @{team}-triager.
+      Confirm your roles: diagnostic investigation and human-gated remediation.
+
+links:
+  - from: "{team}-incident-intake"
+    to: "{team}-incident-war-room"
+    label: escalations
