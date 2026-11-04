@@ -17,7 +17,7 @@ To maximize winning probability across the **$10,000 prize pool**, Algo Alchemis
 | Track | Prize Target | Deliverable / Status | Key Assets |
 |---|---|---|---|
 | **Track 01: Best Business Workflow** | **$2,000 Cash** | **OpsSwitch: Autonomous SRE War Room & Incident Commander** | Complete simulation suite, room template, 7/7 passing integration tests |
-| **Track 03: Best Core Contribution** | **$100 × 20 ($2,000 Cash)** | **4 Upstream PRs** on `sandbox-quantum/switch` | PRs #1397, #1399, #1467, #1471 (100% CI Green, All CLA signed, 0 extraneous files) |
+| **Track 03: Best Core Contribution** | **$100 × 20 ($2,000 Cash)** | **5 Upstream PRs (Maximum Allowed)** on `sandbox-quantum/switch` | PRs #1397, #1399, #1467, #1471, #1490 (100% CI Green, All CLA signed, 0 extraneous files) |
 | **Side Track: Best Blog** | **AirPods 5** | **Deep-Dive Technical Article on DEV.to** | Staged Draft #4975359 + Custom Cover Graphic |
 | **Side Track: Code with Wispr** | **$500 Cash** | **Wispr Flow Voice Dictation Suite** | Complete spoken prompt transcripts + Scorecard validation guide |
 | **Social Track: #HowISwitch** | **Logitech Keyboards** | **5-Post Cross-Platform Social Campaign** | 5 high-converting copy variants + 5 infographics |
@@ -128,7 +128,7 @@ Algo Alchemist has contributed **4 production-grade, meticulously crafted pull r
 ### 4. PR #1471 — Add the Sentry Connector
 - **Upstream PR:** [https://github.com/sandbox-quantum/switch/pull/1471](https://github.com/sandbox-quantum/switch/pull/1471)
 - **Closes Issue:** [#820](https://github.com/sandbox-quantum/switch/issues/820) (Confirmed eligible by core maintainer `@petr-sandbox`)
-- **Branch:** `feat/sentry-connector-820` (Commit `df0496578`)
+- **Branch:** `feat/sentry-connector-820`
 - **Files Changed:** Strictly 9 connector files (Clean rebase on `upstream/main`)
 - **Key Enhancements:**
   - Remote MCP OAuth integration with official server at `https://mcp.sentry.dev/mcp`.
@@ -136,6 +136,19 @@ Algo Alchemist has contributed **4 production-grade, meticulously crafted pull r
   - Excluded destructive `event:admin` scope to enforce least privilege.
   - Documented 8-hour token lifetime provenance.
   - Idiomatic `SKILL.md` enforcing read-before-write, human sign-off for issue mutations, and prompt-injection safety.
+
+### 5. PR #1490 — Add the Stripe Connector
+- **Upstream PR:** [https://github.com/sandbox-quantum/switch/pull/1490](https://github.com/sandbox-quantum/switch/pull/1490)
+- **Closes Issue:** [#829](https://github.com/sandbox-quantum/switch/issues/829)
+- **Branch:** `feat/stripe-connector-829`
+- **Files Changed:** Strictly 9 connector files (Clean rebase on `upstream/main`)
+- **Key Enhancements:**
+  - Remote MCP OAuth integration with official server at `https://mcp.stripe.com`.
+  - OAuth 2.1 authentication with loopback redirect, dynamic client registration, and 24-hour token lifetime.
+  - Identity introspection via `https://api.stripe.com/v1/account` mapping account `id` and `email`.
+  - Built-in `SKILL.md` enforcing integer cent currency conversion, customer PII safety, and mandatory human confirmation before financial actions (refunds, cancellations, credit notes).
+  - Added official Stripe SVG mark (Simple Icons 16.33.0, CC0-1.0) and brand color styling (`#635BFF`).
+  - Unit tests added in `test_loader.py`, `test_registry.py`, `test_connection_catalog.py`, and `test_workspace_services.py`.
 
 ---
 
