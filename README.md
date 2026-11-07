@@ -268,5 +268,5 @@ just test
 - **Team Code:** `K8H5DE`
 - **Team Lead:** Farhan Mallik ([@farhanmallik05](https://github.com/farhanmallik05))
 - **Track 01 (Flagship):** OpsSwitch Autonomous Incident Commander & War Room
-- **Track 03 (Core Contributions):** Supabase (#827) and Sentry (#820) Service Connectors
+- **Track 03 (Core Contributions):** 5 Upstream PRs (#1397, #1399, #1467, #1471, #1490) across Contributor Quickstart, Agent Controller Guide, Supabase, Sentry, and Stripe Connectors
 - **Side Tracks:** Wispr Flow Voice Dictation, DEV.to Deep-Dive Article, Social Media Showcase
